@@ -2,6 +2,7 @@
 using BepInEx.Logging;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 [BepInPlugin("com.SebastianYang.DronePlugin", "Drone Plugin", "1.0.0")]
 public partial class Plugin : BaseUnityPlugin
@@ -11,66 +12,72 @@ public partial class Plugin : BaseUnityPlugin
     private GameObject? droneObject;
     private bool isDroneActive = false;
 
+    private CharacterMovement playerMovementComponent;
+
     public float moveSpeed = 15f; 
     public float rotationSpeed = 100f;
 
     private void Awake() {
         Log = Logger;
         Log.LogInfo($"[Drone Plugin]    Plugin is loaded!");
-
-        // 【关键】订阅 InputManager 的 onBeforeUpdate 事件
-        InputSystem.onBeforeUpdate += OnBeforeInputUpdate;
     }
 
-    void OnDestroy()
+    void Update()
     {
-        // 在插件卸载时，取消订阅，避免内存泄漏
-        InputSystem.onBeforeUpdate -= OnBeforeInputUpdate;
-    }
-
-    private void OnBeforeInputUpdate()
-    {
-        // 如果无人机是激活状态，就在输入系统处理任何事情之前，将玩家输入清零
-        if (isDroneActive && Character.localCharacter != null)
-        {
-            // 直接访问并清零，此时做的修改将在本帧的输入处理中生效
-            Character.localCharacter.input.movementInput = Vector2.zero;
-            Character.localCharacter.input.lookInput = Vector2.zero;
-            Character.localCharacter.input.jumpWasPressed = false;
-            Character.localCharacter.input.sprintIsPressed = false;
-            // ... 你可以根据需要添加更多要清零的变量 ...
-        }
-    }
-
-    void Update() {
+        // Update 中只负责两件事：监听按键 和 移动无人机
         if (Input.GetKeyDown(KeyCode.T))
         {
-            Log.LogInfo("[Drone Plugin]    T key pressed, toggling drone mode.");
             ToggleDrone();
         }
-
+        
         if (isDroneActive)
         {
             MoveDrone();
         }
     }
-
     
     void ToggleDrone()
     {
         isDroneActive = !isDroneActive;
         Log.LogInfo($"无人机模式切换为: {isDroneActive}");
 
+        if (Character.localCharacter != null && playerMovementComponent == null)
+        {
+            playerMovementComponent = Character.localCharacter.refs.movement;
+        }
+        
+        if (playerMovementComponent == null)
+        {
+            Log.LogError("无法获取 CharacterMovement 组件，操作中止。");
+            isDroneActive = false;
+            return;
+        }
+
         if (isDroneActive)
         {
-            if (Character.localCharacter == null || MainCamera.instance == null) {
-                Log.LogError("激活失败：玩家或摄像机不存在！");
-                isDroneActive = false;
-                return;
+            // --- 冻结玩家 ---
+            playerMovementComponent.enabled = false;
+            Log.LogInfo("CharacterMovement 组件已禁用。");
+
+            // 【启用物理重力】
+            // 遍历角色的所有肢体，为它们开启 Unity 的原生重力
+            foreach (var bodypart in Character.localCharacter.refs.ragdoll.partList)
+            {
+                if (bodypart.Rig != null)
+                {
+                    bodypart.Rig.useGravity = true;
+                }
             }
+            Log.LogInfo("所有肢体的原生重力已启用，玩家将被固定在地面上。");
 
             // --- 激活无人机 ---
-            droneObject = new GameObject("MyDrone_Final");
+            if (MainCamera.instance == null) {
+                // 如果出错，记得恢复所有状态
+                isDroneActive = false;
+                EnablePlayerControl(); 
+                return;
+            }
+            droneObject = new GameObject("MyDrone_Newtonian");
             droneObject.transform.position = Character.localCharacter.Head + (Character.localCharacter.transform.up * 0.5f) + (Character.localCharacter.transform.forward * 1f);
             
             var cameraOverride = droneObject.AddComponent<CameraOverride>();
@@ -79,6 +86,9 @@ public partial class Plugin : BaseUnityPlugin
         }
         else
         {
+            // --- 恢复玩家控制 ---
+            EnablePlayerControl();
+
             // --- 关闭无人机 ---
             if (MainCamera.instance != null) {
                 MainCamera.instance.SetCameraOverride(null!);
@@ -87,6 +97,25 @@ public partial class Plugin : BaseUnityPlugin
                 Destroy(droneObject);
             }
         }
+    }
+
+    void EnablePlayerControl()
+    {
+        if (playerMovementComponent == null || Character.localCharacter == null) return;
+
+        // 【恢复游戏控制】
+        // 必须先关闭原生重力，再启用运动组件
+        foreach (var bodypart in Character.localCharacter.refs.ragdoll.partList)
+        {
+            if (bodypart.Rig != null)
+            {
+                bodypart.Rig.useGravity = false;
+            }
+        }
+        Log.LogInfo("所有肢体的原生重力已关闭。");
+        
+        playerMovementComponent.enabled = true;
+        Log.LogInfo("CharacterMovement 组件已恢复。");
     }
 
     // 【无人机移动逻辑】
