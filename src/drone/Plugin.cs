@@ -10,10 +10,12 @@ public partial class Plugin : BaseUnityPlugin
     private GameObject? droneObject;
     private bool isDroneActive = false;
 
+    private Vector2 originalMovementInput;
+    private Vector2 originalMouseInput;
+
     private void Awake() {
         Log = Logger;
-
-        Log.LogInfo($"Plugin [Drone Plugin] is loaded!");
+        Log.LogInfo($"[Drone Plugin]    Plugin is loaded!");
     }
 
     void Update() {
@@ -21,6 +23,13 @@ public partial class Plugin : BaseUnityPlugin
         {
             Log.LogInfo("[Drone Plugin]    T key pressed, toggling drone mode.");
             ToggleDrone();
+        }
+
+        if (isDroneActive && Character.localCharacter != null && droneObject != null) {
+            Character.localCharacter.input.movementInput = Vector2.zero;
+            Character.localCharacter.input.lookInput = Vector2.zero;
+            Character.localCharacter.input.jumpWasPressed = false;
+            Character.localCharacter.input.sprintIsPressed = false;
         }
     }
 
@@ -31,11 +40,13 @@ public partial class Plugin : BaseUnityPlugin
         if (isDroneActive) {
             if (Character.localCharacter == null) {
                 Log.LogError("[Drone Plugin]    No local character found, cannot activate drone mode.");
+                isDroneActive = false;
                 return;
             }
 
             if (MainCamera.instance == null) {
                 Log.LogError("[Drone Plugin]    No main camera found, cannot activate drone mode.");
+                isDroneActive = false;
                 return;
             }
 
@@ -43,7 +54,10 @@ public partial class Plugin : BaseUnityPlugin
 
             Log.LogInfo("[Drone Plugin]    Creating drone camera object...");
             droneObject = new GameObject("DroneCamera");
-            droneObject.transform.position = Character.localCharacter.transform.position + Vector3.up * 2f;
+           
+            Vector3 headPos = Character.localCharacter.Head;
+            Vector3 spawnPos = headPos + Character.localCharacter.transform.up * 2f + Character.localCharacter.transform.forward * 1f;
+            droneObject.transform.position = spawnPos;
 
             Log.LogInfo("[Drone Plugin]    Adding DroneCameraOverride component...");
             var droneController = droneObject.AddComponent<CameraOverride>();
