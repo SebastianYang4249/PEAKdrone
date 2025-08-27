@@ -1,13 +1,13 @@
 [config]
-schemaVersion = "0.0.1"
+schemaVersion = "1.0.2"
 
 [general]
 repository = "https://thunderstore.io"
 
 [package]
 namespace = "Yang"
-name = "drone"
-description = "TODO: Fill in short mod description."
+name = "Drone"
+description = "Losing your sense of direction and getting lost while climbing can be very frustrating. I created this drone mod to help you better observe the map and mark the route you want to take."
 websiteUrl = "" # TODO: Add a link to your mod repository here (optional)
 containsNsfwContent = false
 

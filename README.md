@@ -1,31 +1,36 @@
-# drone
+Losing your sense of direction and getting lost while climbing can be very frustrating. I created this drone mod to help you better observe the map and mark the route you want to take.
 
-Describe your project here!
+---
 
-## Template Instructions
+## Drone Mod Controls
 
-You can remove this section after you've set up your project.
+**Keyboard**
+- Toggle Drone Mode : `T`
+- Move : WASD
+- Ascend : `Space`
+- Descend : `CTRL` (Crouch)
+- Marker : `Left Mouse Button`
+- Cancel marker : `Right Mouse Button`
+- Cancel all marker : `R`
 
-Next steps:
+---
 
-- Create a copy of the `Config.Build.user.props.template` file and name it `Config.Build.user.props`
-  - This will automate copying your plugin assembly to `BepInEx/plugins/`
-  - Configure the paths to point to your game path and your `BepInEx/plugins/`
-  - Game assembly references should work if the path to the game is valid
-- Search `TODO` in the whole project to see what you should configure or modify
+## Manual installation:
 
-### Thunderstore Packaging
+1. Install BepInEx
+2. Download this mod and place the drone.dll in the BepInEx\Plugins folder
 
-This template comes with Thunderstore packaging built-in, using [TCLI](<https://github.com/thunderstore-io/thunderstore-cli>).
+---
+## Changelog:
+1.0.0
+- Add drone mode
+- Add marker
 
-You can build Thunderstore packages by running:
+1.0.1
+- Add drone marker animation
+- Add multiplayer marker sync
+- Fix some marker line glitch
 
-```sh
-dotnet build -c Release -target:PackTS -v d
-```
-
-> [!NOTE]  
-> You can learn about different build options with `dotnet build --help`.  
-> `-c` is short for `--configuration` and `-v d` is `--verbosity detailed`.
-
-The built package will be found at `artifacts/thunderstore/`.
+1.0.2
+- Add item marker in drone view
+- Fix a bug cause many error in sync manager
